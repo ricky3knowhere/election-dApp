@@ -31,40 +31,40 @@ App = {
       // Connect provider to interact with contract
       App.contracts.Election.setProvider(App.web3Provider);
 
-      // App.listenForEvents();
+      App.listenForEvents();
 
       return App.render();
     });
   },
 
   // Listen for events emitted from the contract
-  // listenForEvents: function () {
-  //   App.contracts.Election.deployed().then(function (instance) {
-  //     // Restart Chrome if you are unable to receive this event
-  //     // This is a known issue with Metamask
-  //     // https://github.com/MetaMask/metamask-extension/issues/2393
-  //     console.log("instance ==>> ", instance);
-  //     instance
-  //       .votedEvent(
-  //         {},
-  //         {
-  //           fromBlock: 0,
-  //           toBlock: "latest",
-  //         }
-  //       )
-  //       .watch(function (error, event) {
-  //         console.log("event triggered", event);
-  //         // Reload when a new vote is recorded
-  //         App.render();
-  //       });
-  //   });
-  // },
+  listenForEvents: function () {
+    App.contracts.Election.deployed().then(function (instance) {
+      // Restart Chrome if you are unable to receive this event
+      // This is a known issue with Metamask
+      // https://github.com/MetaMask/metamask-extension/issues/2393
+      instance
+        .votedEvent(
+          {},
+          {
+            fromBlock: 0,
+            toBlock: "latest",
+          }
+        )
+        .watch(function (error, event) {
+          console.log("event triggered", event);
+          // Reload when a new vote is recorded
+          App.render();
+        });
+    });
+  },
 
   render: function () {
     var electionInstance;
     var loader = $("#loader");
     var content = $("#content");
 
+    $('#voted').html('')
     loader.show();
     content.hide();
 
@@ -75,12 +75,11 @@ App = {
         $("#accountAddress").html("Your Account: " + account);
       }
     });
-    
+
     // Load contract data
-    console.log("instance ==>> ", App.contracts.Election.deployed().then(i => i));
     App.contracts.Election.deployed()
-    .then(function (instance) {
-      electionInstance = instance;
+      .then(function (instance) {
+        electionInstance = instance;
         return electionInstance.candidatesCount();
       })
       .then(function (candidatesCount) {
@@ -113,38 +112,39 @@ App = {
             candidatesSelect.append(candidateOption);
           });
         }
-          loader.hide();
-          content.show();
-        // return electionInstance.voters(App.account);
+        loader.hide();
+        content.show();
+        return electionInstance.voters(App.account);
       })
-      // .then(function (hasVoted) {
-      //   // Do not allow a user to vote
-      //   if (hasVoted) {
-      //     $("form").hide();
-      //   }
-      //   loader.hide();
-      //   content.show();
-      // })
+      .then(function (hasVoted) {
+        // Do not allow a user to vote
+        if (hasVoted) {
+          $("form").hide();
+          $('#voted').html('<h4>You has voted in the election</h4>')
+        }
+        loader.hide();
+        content.show();
+      })
       .catch(function (error) {
         console.warn(error);
       });
   },
 
-  // castVote: function () {
-  //   var candidateId = $("#candidatesSelect").val();
-  //   App.contracts.Election.deployed()
-  //     .then(function (instance) {
-  //       return instance.vote(candidateId, { from: App.account });
-  //     })
-  //     .then(function (result) {
-  //       // Wait for votes to update
-  //       $("#content").hide();
-  //       $("#loader").show();
-  //     })
-  //     .catch(function (err) {
-  //       console.error(err);
-  //     });
-  // },
+  castVote: function () {
+    var candidateId = $("#candidatesSelect").val();
+    App.contracts.Election.deployed()
+      .then(function (instance) {
+        return instance.vote(candidateId, { from: App.account });
+      })
+      .then(function (result) {
+        // Wait for votes to update
+        $("#content").hide();
+        $("#loader").show();
+      })
+      .catch(function (err) {
+        console.error(err);
+      });
+  },
 };
 
 $(function () {
